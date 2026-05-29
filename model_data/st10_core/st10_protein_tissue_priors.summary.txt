@@ -1,0 +1,22 @@
+proteins: 2469
+hpa_matches: 2454
+mean_hpa_tissue_prior: 0.8385
+median_hpa_tissue_prior: 0.8650
+
+RNA tissue specificity:
+RNA tissue specificity
+Tissue enhanced           968
+Low tissue specificity    839
+Tissue enriched           415
+Group enriched            225
+NaN                        15
+Not detected                7
+
+Protein tissue specificity:
+Protein tissue specificity
+Tissue enriched           640
+Tissue enhanced           511
+Low tissue specificity    511
+Group enriched            410
+Not detected              367
+NaN                        30

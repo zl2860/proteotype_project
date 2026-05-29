@@ -1,0 +1,56 @@
+st10_edges: 17966
+matched_edges_with_gtex_eqtl_coloc: 386
+matched_proteins: 386
+matched_snps: 385
+long_tissue_rows: 2345
+mean_snp_tissue_reg_prior: 0.0205
+mean_prior_among_matches: 0.9521
+
+Top GTEx tissues among matched ST10 edges:
+gtex_tissue
+Esophagus_Muscularis                   85
+Adipose_Visceral_Omentum               84
+Skin_Sun_Exposed_Lower_leg             83
+Nerve_Tibial                           81
+Lung                                   81
+Esophagus_Mucosa                       77
+Whole_Blood                            75
+Cells_Cultured_fibroblasts             74
+Adipose_Subcutaneous                   74
+Artery_Tibial                          73
+Skin_Not_Sun_Exposed_Suprapubic        71
+Thyroid                                69
+Artery_Aorta                           66
+Heart_Left_Ventricle                   66
+Colon_Transverse                       66
+Pancreas                               62
+Muscle_Skeletal                        61
+Heart_Atrial_Appendage                 60
+Colon_Sigmoid                          59
+Liver                                  57
+Testis                                 57
+Spleen                                 57
+Esophagus_Gastroesophageal_Junction    57
+Breast_Mammary_Tissue                  56
+Stomach                                50
+
+Mapped cancer sites among matched ST10 edges:
+esophagus                               219
+nonmelanoma_skin                        154
+melanoma_skin                           154
+brain_cns                               127
+colorectal                              125
+leukemia                                102
+multiple_myeloma_immunoproliferative    102
+non_hodgkin_lymphoma                    102
+lung_trachea_bronchus                    81
+thyroid                                  69
+pancreas                                 62
+liver_intrahepatic_bile_ducts            57
+testicular                               57
+female_breast                            56
+stomach                                  50
+prostate                                 40
+ovary                                    26
+corpus_uteri                             26
+kidney_renal_pelvis                       8

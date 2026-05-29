@@ -1,0 +1,10 @@
+edges: 17966
+snps: 8618
+proteins: 2430
+numeric_edge_features: 116
+edges_with_gtex_coloc: 386
+edges_with_finemap_top: 6356
+edges_in_credible_set: 10726
+edges_with_regulatory_noncoding_variant: 388
+edges_with_high_impact_coding_variant: 88
+edges_with_network_evidence: 632

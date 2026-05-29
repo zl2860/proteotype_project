@@ -1,0 +1,20 @@
+Matched rsIDs: 8616
+ST10 matched edges: 17966
+Proteins with matched edges: 2469
+Unique rsIDs in edges: 8616
+
+Edges by cis/trans:
+cis_trans
+trans    16312
+cis       1654
+
+Proteins by panel:
+protein_panel
+Cardiometabolic       351
+Oncology              348
+Inflammation          347
+Neurology             336
+Inflammation_II       316
+Cardiometabolic_II    290
+Oncology_II           242
+Neurology_II          239
