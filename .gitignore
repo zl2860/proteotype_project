@@ -1,0 +1,40 @@
+# Raw genotype, diagnosis, and extracted data
+st10_core_rsid/
+model_data/
+model_runs/
+diagnosis_traj/**/*.qs2
+diagnosis_traj/processed/
+diagnosis_traj/diagnosis_long_for_traj.qs2
+
+# Large/private literature and supplement artifacts
+文献资料补充/
+*.xlsx
+*.xls
+*.pdf
+*.dmg
+
+# Generated PLINK extraction payloads can be rebuilt from scripts/metadata
+plink_variant_lists/**/*.csv
+plink_variant_lists/**/*.tsv
+plink_variant_lists/**/*.txt
+plink_variant_lists/**/*.log
+!plink_variant_lists/README.md
+!plink_variant_lists/**/README.md
+!plink_variant_lists/**/*.sh
+
+# Python/R runtime artifacts
+__pycache__/
+*.py[cod]
+.Rhistory
+.RData
+.Rproj.user/
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+
+# Local secrets/config
+.env
+*.pem
+*.key
