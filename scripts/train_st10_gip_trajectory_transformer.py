@@ -58,6 +58,7 @@ class ProteinAwareGIPEncoder(nn.Module):
         edge_logp: np.ndarray,
         edge_cis: np.ndarray,
         edge_prior: np.ndarray | None,
+        edge_features: np.ndarray | None,
         d_model: int,
         dropout: float,
         prior_strength: float,
@@ -74,12 +75,15 @@ class ProteinAwareGIPEncoder(nn.Module):
         if edge_prior is None:
             edge_prior = np.zeros_like(edge_beta, dtype=np.float32)
         self.register_buffer("edge_prior", torch.tensor(edge_prior, dtype=torch.float32))
+        if edge_features is None:
+            edge_features = np.zeros((len(edge_beta), 0), dtype=np.float32)
+        self.register_buffer("edge_features", torch.tensor(edge_features, dtype=torch.float32))
         self.prior_strength = prior_strength
 
         self.snp_embedding = nn.Embedding(n_snps, d_model)
         self.protein_embedding = nn.Embedding(n_proteins, d_model)
         self.edge_mlp = nn.Sequential(
-            nn.Linear(d_model + 4, d_model),
+            nn.Linear(d_model + 4 + self.edge_features.shape[1], d_model),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(d_model, d_model),
@@ -120,6 +124,9 @@ class ProteinAwareGIPEncoder(nn.Module):
             ],
             dim=-1,
         )
+        if self.edge_features.shape[1] > 0:
+            edge_extra = self.edge_features.unsqueeze(0).expand(bsz, -1, -1)
+            edge_feat = torch.cat([edge_feat, edge_extra], dim=-1)
         edge_hidden = self.edge_mlp(torch.cat([snp_emb, edge_feat], dim=-1))
         raw_scores = self.attn_score(edge_hidden).squeeze(-1)
         raw_scores = (
@@ -210,6 +217,7 @@ def train(args: argparse.Namespace) -> None:
         edge_logp=z["edge_logp"],
         edge_cis=z["edge_cis"],
         edge_prior=z["edge_prior"] if "edge_prior" in z else None,
+        edge_features=z["edge_features"] if args.use_edge_features and "edge_features" in z else None,
         d_model=args.d_model,
         dropout=args.dropout,
         prior_strength=args.prior_strength,
@@ -367,6 +375,7 @@ def train(args: argparse.Namespace) -> None:
                     "args": vars(args),
                     "protein_ids": z["protein_ids"],
                     "snp_rsids": z["snp_rsids"],
+                    "edge_feature_names": z["edge_feature_names"] if "edge_feature_names" in z else np.array([], dtype=object),
                     "site_names": z["site_names"] if "site_names" in z else np.array([], dtype=object),
                     "time_bin_labels": z["time_bin_labels"] if "time_bin_labels" in z else np.array([], dtype=object),
                     "best_epoch": epoch,
@@ -381,6 +390,7 @@ def train(args: argparse.Namespace) -> None:
             "args": vars(args),
             "protein_ids": z["protein_ids"],
             "snp_rsids": z["snp_rsids"],
+            "edge_feature_names": z["edge_feature_names"] if "edge_feature_names" in z else np.array([], dtype=object),
             "site_names": z["site_names"] if "site_names" in z else np.array([], dtype=object),
             "time_bin_labels": z["time_bin_labels"] if "time_bin_labels" in z else np.array([], dtype=object),
         },
@@ -404,6 +414,8 @@ def main() -> None:
     parser.add_argument("--event-loss-weight", type=float, default=0.2)
     parser.add_argument("--time-loss-weight", type=float, default=0.5)
     parser.add_argument("--prior-strength", type=float, default=1.0)
+    parser.add_argument("--no-edge-features", dest="use_edge_features", action="store_false")
+    parser.set_defaults(use_edge_features=True)
     parser.add_argument("--site-loss-weight", type=float, default=0.5)
     parser.add_argument("--site-binary-loss-weight", type=float, default=0.5)
     parser.add_argument("--site-positive-only", action="store_true", default=True)

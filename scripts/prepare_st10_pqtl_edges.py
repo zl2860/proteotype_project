@@ -8,6 +8,68 @@ from pathlib import Path
 import pandas as pd
 
 
+CODING_CONSEQUENCES = {
+    "missense_variant",
+    "splice_acceptor_variant",
+    "splice_donor_variant",
+    "stop_gained",
+    "stop_lost",
+    "start_lost",
+    "frameshift_variant",
+    "protein_altering_variant",
+    "inframe_insertion",
+    "inframe_deletion",
+    "synonymous_variant",
+}
+
+REGULATORY_CONSEQUENCES = {
+    "5_prime_UTR_variant",
+    "3_prime_UTR_variant",
+    "upstream_gene_variant",
+    "downstream_gene_variant",
+    "intron_variant",
+    "splice_region_variant",
+    "regulatory_region_variant",
+    "TF_binding_site_variant",
+}
+
+
+def split_consequences(value: object) -> set[str]:
+    if pd.isna(value):
+        return set()
+    return {x.strip() for x in str(value).split(",") if x.strip()}
+
+
+def classify_consequence(value: object) -> str:
+    terms = split_consequences(value)
+    if terms & CODING_CONSEQUENCES:
+        return "coding_or_splice"
+    if terms & REGULATORY_CONSEQUENCES:
+        return "regulatory_or_intronic"
+    if terms:
+        return "other_annotated"
+    return "unknown"
+
+
+def classify_regulatory_mode(row: pd.Series) -> str:
+    consequence_class = row["consequence_class"]
+    same_gene = str(row.get("annotated_gene", "")).upper() == str(row.get("gene_symbol", "")).upper()
+    cis_trans = str(row.get("cis_trans", "")).lower()
+    if cis_trans == "cis" and same_gene and consequence_class == "coding_or_splice":
+        return "cis_target_coding_or_splice"
+    if cis_trans == "cis" and same_gene:
+        return "cis_target_regulatory_or_linked"
+    if cis_trans == "cis":
+        return "cis_locus_linked"
+    if same_gene and consequence_class == "coding_or_splice":
+        return "trans_annotated_gene_coding_or_splice"
+    if consequence_class == "coding_or_splice":
+        return "trans_other_gene_coding_or_splice"
+    if consequence_class == "regulatory_or_intronic":
+        return "trans_regulatory_or_intronic"
+    return "trans_other_or_unknown"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--xlsx", type=Path, default=Path("文献资料补充/Nature-PQTL-补充材料.xlsx"))
@@ -91,6 +153,17 @@ def main() -> None:
     edges["beta_logp_weight"] = edges["beta"] * edges["log10p"].fillna(0).pow(0.5)
     edges["is_cis"] = edges["cis_trans"].eq("cis").astype(int)
     edges["is_trans"] = edges["cis_trans"].eq("trans").astype(int)
+    edges["consequence_class"] = edges["consequence"].map(classify_consequence)
+    edges["annotated_gene_matches_target"] = (
+        edges["annotated_gene"].fillna("").astype(str).str.upper()
+        == edges["gene_symbol"].fillna("").astype(str).str.upper()
+    ).astype(int)
+    edges["regulatory_mode"] = edges.apply(classify_regulatory_mode, axis=1)
+    snp_n_proteins = edges.groupby("rsid")["protein_id"].transform("nunique")
+    snp_n_panels = edges.groupby("rsid")["protein_panel"].transform("nunique")
+    edges["snp_n_target_proteins"] = snp_n_proteins.astype(int)
+    edges["snp_n_target_panels"] = snp_n_panels.astype(int)
+    edges["snp_is_pleiotropic_pqtl"] = (snp_n_proteins >= 5).astype(int)
     edges = edges.sort_values(["protein_id", "cis_trans", "rsid"]).reset_index(drop=True)
 
     protein_summary = (
@@ -106,6 +179,8 @@ def main() -> None:
             n_trans=("is_trans", "sum"),
             max_log10p=("log10p", "max"),
             sum_abs_beta=("abs_beta", "sum"),
+            n_regulatory_modes=("regulatory_mode", "nunique"),
+            regulatory_modes=("regulatory_mode", lambda x: ";".join(sorted(set(map(str, x))))),
         )
         .reset_index()
         .sort_values(["protein_panel", "assay_target", "protein_id"])
@@ -120,6 +195,7 @@ def main() -> None:
             max_abs_beta=("abs_beta", "max"),
             max_log10p=("log10p", "max"),
             cis_trans_values=("cis_trans", lambda x: ";".join(sorted(set(map(str, x))))),
+            regulatory_modes=("regulatory_mode", lambda x: ";".join(sorted(set(map(str, x))))),
         )
         .reset_index()
         .sort_values(["chrom", "rsid"])

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 
@@ -13,6 +14,18 @@ import pandas as pd
 import torch
 from sklearn.cluster import KMeans
 from torch.utils.data import DataLoader, Subset
+
+
+def install_numpy_pickle_compat() -> None:
+    if "numpy._core" in sys.modules:
+        return
+    import numpy.core as numpy_core
+
+    sys.modules["numpy._core"] = numpy_core
+    for name in ("multiarray", "numeric", "umath"):
+        module_name = f"numpy.core.{name}"
+        if module_name in sys.modules:
+            sys.modules[f"numpy._core.{name}"] = sys.modules[module_name]
 
 
 def load_trainer(path: Path):
@@ -37,6 +50,7 @@ def build_model(trainer, z, ckpt, device: str):
         edge_logp=z["edge_logp"],
         edge_cis=z["edge_cis"],
         edge_prior=z["edge_prior"] if "edge_prior" in z else None,
+        edge_features=z["edge_features"] if model_args.get("use_edge_features", False) and "edge_features" in z else None,
         d_model=int(model_args["d_model"]),
         dropout=float(model_args["dropout"]),
         prior_strength=float(model_args.get("prior_strength", 1.0)),
@@ -77,6 +91,7 @@ def main() -> None:
 
     trainer = load_trainer(args.trainer)
     z = np.load(args.cache, allow_pickle=True)
+    install_numpy_pickle_compat()
     ckpt = torch.load(args.run_dir / "model.pt", map_location="cpu", weights_only=False)
     model = build_model(trainer, z, ckpt, args.device)
     dataset = trainer.TrajDataset(args.cache)

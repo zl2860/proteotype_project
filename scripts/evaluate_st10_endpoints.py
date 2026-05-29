@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import sys
 from collections import Counter
 from pathlib import Path
 
@@ -19,6 +20,18 @@ STAGE_ORDER = {
     "index_cancer": 2,
     "metastasis": 3,
 }
+
+
+def install_numpy_pickle_compat() -> None:
+    if "numpy._core" in sys.modules:
+        return
+    import numpy.core as numpy_core
+
+    sys.modules["numpy._core"] = numpy_core
+    for name in ("multiarray", "numeric", "umath"):
+        module_name = f"numpy.core.{name}"
+        if module_name in sys.modules:
+            sys.modules[f"numpy._core.{name}"] = sys.modules[module_name]
 
 
 def load_trainer(path: Path):
@@ -81,6 +94,7 @@ def main() -> None:
     _, val_ds = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(args.seed))
     loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False)
 
+    install_numpy_pickle_compat()
     ckpt = torch.load(args.run_dir / "model.pt", map_location="cpu", weights_only=False)
     model_args = ckpt["args"]
     site_names = np.array(ckpt.get("site_names", z["site_names"] if "site_names" in z else []), dtype=object)
@@ -93,6 +107,7 @@ def main() -> None:
         edge_logp=z["edge_logp"],
         edge_cis=z["edge_cis"],
         edge_prior=z["edge_prior"] if "edge_prior" in z else None,
+        edge_features=z["edge_features"] if model_args.get("use_edge_features", False) and "edge_features" in z else None,
         d_model=int(model_args["d_model"]),
         dropout=float(model_args["dropout"]),
         prior_strength=float(model_args.get("prior_strength", 1.0)),

@@ -12,22 +12,54 @@ This repository intentionally excludes raw genotype data, diagnosis event data, 
 /usr/bin/python3 scripts/prepare_st10_pqtl_edges.py
 ```
 
-2. Build cancer-site trajectory sequences from cleaned diagnosis events:
+2. Build Human Protein Atlas tissue priors for ST10 proteins:
+
+```bash
+/usr/bin/python3 scripts/build_hpa_protein_tissue_priors.py
+```
+
+3. Match SNP tissue-regulatory evidence from GTEx cis pQTL-eQTL colocalization:
+
+```bash
+/usr/bin/python3 scripts/build_snp_tissue_regulatory_priors.py
+```
+
+4. Build comprehensive pQTL feature tables:
+
+```bash
+/usr/bin/python3 scripts/build_comprehensive_pqtl_features.py
+```
+
+This creates edge-, SNP-, and protein-level feature tables under
+`model_data/st10_core/features/`, including pQTL strength, consequence class,
+fine-mapping/PIP, regulatory noncoding annotations, GTEx colocalized tissues,
+pQTL-pQTL colocalization, PPI/receptor-ligand trans-network evidence,
+covariate robustness, protein heritability, HPA tissue specificity, and
+secretome/membrane labels.
+
+5. Build cancer-site trajectory sequences from cleaned diagnosis events:
 
 ```bash
 Rscript scripts/build_cancer_site_sequences.R
 ```
 
-3. Prepare a training cache:
+6. Prepare a training cache:
 
 ```bash
 /usr/bin/python3 scripts/prepare_st10_training_cache.py \
   --max-samples 131072 \
   --max-proteins 1024 \
+  --prior-version mode_tissue_reg \
   --out model_data/st10_core/st10_training_cache_n131072_p1024_time_traj_prior.npz
 ```
 
-4. Train a time-aware trajectory model:
+Use `--prior-version base` for the original beta/logp/cis/impact/panel prior, and
+`--prior-version mode_tissue` for HPA protein tissue specificity without SNP-tissue
+regulatory evidence. By default, the cache also includes standardized engineered
+edge features from `model_data/st10_core/features/st10_edge_features.csv`; pass
+`--no-edge-features` to disable them.
+
+7. Train a time-aware trajectory model:
 
 ```bash
 /usr/bin/python3 scripts/train_st10_gip_trajectory_transformer.py \
@@ -46,7 +78,7 @@ Rscript scripts/build_cancer_site_sequences.R
   --prior-strength 1.0
 ```
 
-5. Evaluate strict and relaxed trajectory metrics:
+8. Evaluate strict and relaxed trajectory metrics:
 
 ```bash
 /usr/bin/python3 scripts/evaluate_st10_endpoints.py \
@@ -54,7 +86,7 @@ Rscript scripts/build_cancer_site_sequences.R
   --run-dir model_runs/st10_n131072_p1024_time_traj_prior_nope_mps_12ep
 ```
 
-6. Infer proteotype clusters and trajectory associations:
+9. Infer proteotype clusters and trajectory associations:
 
 ```bash
 /usr/bin/python3 scripts/infer_st10_proteotype_trajectory_links.py \
